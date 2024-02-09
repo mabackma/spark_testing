@@ -1,5 +1,7 @@
 import json
 import os
+
+import sparknlp
 import sparknlp_jsl
 from sparknlp_jsl.annotator import *
 import pandas as pd
