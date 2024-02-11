@@ -13,3 +13,5 @@ pip install -r requirements.txt
 pip install spark-nlp-jsl==5.2.1  --extra-index-url https://pypi.johnsnowlabs.com/SECRET 
     
 Here SECRET is 5.2.1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx from the spark_jsl.json file
+
+run "python test_summarization.py" to see that everything is working
