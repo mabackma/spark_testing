@@ -3,4 +3,13 @@ spark-nlp==5.2.2
 numpy
 pandas
 
+flask[async]
+flask-cors
+openai-whisper
+openai
+setuptools-rust
+python-dotenv
+pathlib
+httpx
+
 spark-nlp-display
