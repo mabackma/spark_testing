@@ -8,7 +8,7 @@ from sparknlp.pretrained import ResourceDownloader
 import subprocess
 from laymen_summary import summarizer_clinical_laymen_onnx_pipeline
 from dotenv import load_dotenv
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import whisper
 
@@ -52,12 +52,13 @@ def hello_world():
     return 'Hello World!'
 
 
-@app.route('/stt', methods=['POST'])
+@app.route('/stt-summary', methods=['POST'])
 def speech_to_text_api():
     try:
         if 'speech' not in request.files:
             return 'No file part'
 
+        # the request should include a file with a key 'speech'
         audio_file = request.files['speech']
         if audio_file.filename == '':
             return 'No selected file'
@@ -85,9 +86,32 @@ def speech_to_text_api():
         result = whisper.decode(model, mel, options)
 
         # summarize the text
-        summarizer_clinical_laymen_onnx_pipeline(result.text)
-        return result.text
+        summary = summarizer_clinical_laymen_onnx_pipeline(result.text)
 
+        # Convert the summary into a JSON serializable format
+        summary_json = str(summary)
+
+        # Return the summary as JSON
+        return jsonify({'summary': summary_json})
+
+    except Exception as e:
+        return f'Error: {e}'
+
+
+@app.route('/summary', methods=['POST'])
+def text_to_summary_api():
+    try:
+        data = request.json
+
+        if 'text' in data:
+            text_content = data['text']
+
+            # summarize the text
+            summary = summarizer_clinical_laymen_onnx_pipeline(text_content)
+            summary_json = str(summary)
+            return jsonify({'summary': summary_json})
+        else:
+            return 'Error: No text provided in JSON data'
 
     except Exception as e:
         return f'Error: {e}'

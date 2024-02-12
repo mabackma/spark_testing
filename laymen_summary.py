@@ -2,14 +2,15 @@ from pyspark.ml import Pipeline
 from sparknlp import DocumentAssembler
 from sparknlp.pretrained import PretrainedPipeline
 from sparknlp_jsl.annotator import MedicalSummarizer
-from print_summary import print_summary
+from make_summary import make_summary
 
 
 def summarizer_clinical_laymen_onnx_pipeline(input_text):
     pipeline = PretrainedPipeline("summarizer_clinical_laymen_onnx_pipeline", "en", "clinical/models")
 
     result = pipeline.fullAnnotate(input_text)
-    print_summary(result, 'NLP 5.2.0+ CLINICAL LAYMEN ONNX PIPELINE')
+    summary = make_summary(result, 'NLP 5.2.0+ CLINICAL LAYMEN ONNX PIPELINE')
+    return summary
 
 
 def summarizer_clinical_laymen_onnx(spark, input_text):
@@ -27,14 +28,16 @@ def summarizer_clinical_laymen_onnx(spark, input_text):
 
     data = spark.createDataFrame([[input_text]]).toDF("text")
     result = pipeline.fit(data).transform(data)
-    print_summary(result.collect(), 'NLP 5.0.1+ CLINICAL LAYMEN ONNX')
+    summary = make_summary(result.collect(), 'NLP 5.0.1+ CLINICAL LAYMEN ONNX')
+    return summary
 
 
 def summarizer_clinical_laymen_pipeline(input_text):
     pipeline = PretrainedPipeline("summarizer_clinical_laymen_pipeline", "en", "clinical/models")
 
     result = pipeline.fullAnnotate(input_text)
-    print_summary(result, 'NLP 4.4.1+, NLP 4.4.4+ CLINICAL LAYMEN PIPELINE')
+    summary = make_summary(result, 'NLP 4.4.1+, NLP 4.4.4+ CLINICAL LAYMEN PIPELINE')
+    return summary
 
 
 def summarizer_clinical_laymen(spark, input_text):
@@ -54,4 +57,5 @@ def summarizer_clinical_laymen(spark, input_text):
 
     data = spark.createDataFrame([[input_text]]).toDF("text")
     result = pipeline.fit(data).transform(data)
-    print_summary(result.collect(), 'NLP 4.4.2+ CLINICAL LAYMEN')
+    summary = make_summary(result.collect(), 'NLP 4.4.2+ CLINICAL LAYMEN')
+    return summary

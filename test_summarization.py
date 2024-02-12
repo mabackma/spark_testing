@@ -54,10 +54,12 @@ print("Spark NLP_JSL Version :", sparknlp_jsl.version())
 
 # Show summaries
 input('\nPRESS ENTER TO CONTINUE\n')
-summarizer_clinical_laymen_onnx_pipeline(input1)
+summary_onnx_pipeline = summarizer_clinical_laymen_onnx_pipeline(input1)
 input('\nPRESS ENTER TO CONTINUE\n')
-summarizer_clinical_laymen_onnx(spark_session, input2)
+summary_onnx = summarizer_clinical_laymen_onnx(spark_session, input2)
 input('\nPRESS ENTER TO CONTINUE\n')
-summarizer_clinical_laymen_pipeline(input3)
+summary_pipeline = summarizer_clinical_laymen_pipeline(input3)
 input('\nPRESS ENTER TO CONTINUE\n')
-summarizer_clinical_laymen(spark_session, input4)
+summary = summarizer_clinical_laymen(spark_session, input4)
+
+spark_session.stop()
