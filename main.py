@@ -4,13 +4,15 @@ import sparknlp_jsl
 from sparknlp_jsl.annotator import *
 import pandas as pd
 import warnings
-from sparknlp.pretrained import ResourceDownloader
+from sparknlp.pretrained import ResourceDownloader, PretrainedPipeline
 import subprocess
 from laymen_summary import summarizer_clinical_laymen_onnx_pipeline
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import whisper
+
+from make_summary import make_summary
 
 app = Flask(__name__)
 CORS(app)
@@ -45,6 +47,12 @@ def start_spark_session():
               "spark.driver.maxResultSize": "2000M"}
 
     return sparknlp_jsl.start(license_keys['SECRET'], params=params)
+
+
+def summarize(pipeline, input_text):
+    result = pipeline.fullAnnotate(input_text)
+    summary = make_summary(result, 'NLP 5.2.0+ CLINICAL LAYMEN ONNX PIPELINE')
+    return summary
 
 
 @app.route('/', methods=['GET'])
@@ -107,7 +115,7 @@ def text_to_summary_api():
             text_content = data['text']
 
             # summarize the text
-            summary = summarizer_clinical_laymen_onnx_pipeline(text_content)
+            summary = summarize(pipeline, text_content)
             summary_json = str(summary)
             return jsonify({'summary': summary_json})
         else:
@@ -130,5 +138,8 @@ if __name__ == "__main__":
     print("Apache Spark version:", spark_session.version)
     print("Spark NLP Version :", sparknlp.version())
     print("Spark NLP_JSL Version :", sparknlp_jsl.version())
+
+    # download pipeline for summarization
+    pipeline = PretrainedPipeline("summarizer_clinical_laymen_onnx_pipeline", "en", "clinical/models")
 
     app.run(debug=True)
