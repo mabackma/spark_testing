@@ -1,5 +1,7 @@
 spark_jsl.json
 .venv
+.env
+key.json
 
 Include/
 Lib/

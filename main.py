@@ -11,12 +11,14 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import whisper
-
 from make_summary import make_summary
 
 app = Flask(__name__)
 CORS(app)
 load_dotenv()
+
+# Google translate api key
+translate_api_key = os.getenv("GOOGLE_TRANSLATE_API_KEY")
 
 # temporary folder to store uploaded file
 UPLOAD_FOLDER = 'C:/temp_whisper_uploads'
