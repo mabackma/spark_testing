@@ -1,6 +1,7 @@
 import json
 import os
 import sparknlp_jsl
+from google.cloud import translate_v3
 from sparknlp_jsl.annotator import *
 import pandas as pd
 import warnings
@@ -12,6 +13,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import whisper
 from make_summary import make_summary
+from google.oauth2.service_account import Credentials
+from google.auth.transport.requests import Request as AuthRequest
 
 app = Flask(__name__)
 CORS(app)
@@ -19,11 +22,18 @@ load_dotenv()
 
 # Google translate api key
 translate_api_key = os.getenv("GOOGLE_TRANSLATE_API_KEY")
+# Google credentials
+credentials = Credentials.from_service_account_file('key.json', scopes=['https://www.googleapis.com/auth/cloud-translation'])
+# Refresh credentials if needed
+if not credentials.valid:
+    authRequest = AuthRequest()
+    credentials.refresh(authRequest)
 
 # temporary folder to store uploaded file
 UPLOAD_FOLDER = 'C:/temp_whisper_uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# Returns the Java version that is running
 def get_java_version():
     try:
         # Run the command to get the Java version
@@ -62,6 +72,41 @@ def hello_world():
     return 'Hello World!'
 
 
+# returns english translation
+@app.route('/translate-to-finnish', methods=['POST'])
+def translate_to_english():
+    try:
+        data = request.json
+
+        if 'text' in data:
+            # Replace with your target language and text
+            target_language = "fi"
+            text = data['text']
+
+            # Create a Translation object
+            client = translate_v3.TranslationServiceClient(credentials=credentials)
+
+            # Build the request
+            request_obj = translate_v3.TranslateTextRequest(
+                parent="projects/noble-sun-414214/locations/global",
+                contents=[text],
+                target_language_code=target_language,
+            )
+
+            # Send the request and process the response
+            response = client.translate_text(request=request_obj)
+
+            # Get the translated text
+            translated_text = response.translations[0].translated_text
+            return jsonify({'translation': translated_text})
+        else:
+            return 'Error: No text provided in JSON data'
+
+    except Exception as e:
+        return f'Error: {e}'
+
+
+# speech-to-text
 @app.route('/stt-summary', methods=['POST'])
 def speech_to_text_api():
     try:
@@ -108,6 +153,12 @@ def speech_to_text_api():
         return f'Error: {e}'
 
 
+@app.before_request
+def parse_json():
+    if request.method == 'POST' and request.path == '/summary':
+        if request.content_type == 'application/json':
+            request.json_data = request.get_json()
+# returns summary from text
 @app.route('/summary', methods=['POST'])
 def text_to_summary_api():
     try:
@@ -118,8 +169,7 @@ def text_to_summary_api():
 
             # summarize the text
             summary = summarize(pipeline, text_content)
-            summary_json = str(summary)
-            return jsonify({'summary': summary_json})
+            return jsonify({'summary': summary})
         else:
             return 'Error: No text provided in JSON data'
 

@@ -12,7 +12,7 @@ if not credentials.valid:
     credentials.refresh(request)
 
 # Replace with your target language and text
-target_language = "fi"
+target_language = "en"
 text = input5
 
 # Create a Translation object
