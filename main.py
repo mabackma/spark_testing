@@ -72,9 +72,9 @@ def hello_world():
     return 'Hello World!'
 
 
-# returns english translation
-@app.route('/translate-to-finnish', methods=['POST'])
-def translate_to_english():
+# returns finnish translation using google cloud translation
+@app.route('/translate-in-google', methods=['POST'])
+def translate_in_google():
     try:
         data = request.json
 
