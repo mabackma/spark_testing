@@ -80,7 +80,7 @@ def translate_in_google():
 
         if 'text' in data:
             # Replace with your target language and text
-            target_language = "fi"
+            target_language = data['targetLanguage']
             text = data['text']
 
             # Create a Translation object
@@ -98,6 +98,7 @@ def translate_in_google():
 
             # Get the translated text
             translated_text = response.translations[0].translated_text
+            print(translated_text)
             return jsonify({'translation': translated_text})
         else:
             return 'Error: No text provided in JSON data'
@@ -194,4 +195,4 @@ if __name__ == "__main__":
     # download pipeline for summarization
     pipeline = PretrainedPipeline("summarizer_clinical_laymen_onnx_pipeline", "en", "clinical/models")
 
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
