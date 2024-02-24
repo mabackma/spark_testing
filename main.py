@@ -5,16 +5,15 @@ from google.cloud import translate_v3
 from sparknlp_jsl.annotator import *
 import pandas as pd
 import warnings
-from sparknlp.pretrained import ResourceDownloader, PretrainedPipeline
+from sparknlp.pretrained import PretrainedPipeline
 import subprocess
-from laymen_summary import summarizer_clinical_laymen_onnx_pipeline
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import whisper
 from make_summary import make_summary
 from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request as AuthRequest
+from transformers import MarianMTModel, MarianTokenizer
 
 app = Flask(__name__)
 CORS(app)
@@ -29,9 +28,12 @@ if not credentials.valid:
     authRequest = AuthRequest()
     credentials.refresh(authRequest)
 
-# temporary folder to store uploaded file
-#UPLOAD_FOLDER = 'C:/temp_whisper_uploads'
-#app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Load the pre-trained MarianMT model and tokenizer for translation finnish to english
+tokenizer_fi_en = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-fi-en")
+model_fi_en = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-fi-en")
+# Load the pre-trained MarianMT model and tokenizer for translation english to finnish
+tokenizer_en_fi = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-fi")
+model_en_fi = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-fi")
 
 # Returns the Java version that is running
 def get_java_version():
@@ -102,58 +104,64 @@ def translate_in_google():
         return f'Error: {e}'
 
 
-# speech-to-text
-#@app.route('/stt-summary', methods=['POST'])
-#def speech_to_text_api():
-#    try:
-#        if 'speech' not in request.files:
-#            return 'No file part'
-#
-#        # the request should include a file with a key 'speech'
-#        audio_file = request.files['speech']
-#        if audio_file.filename == '':
-#            return 'No selected file'
-#
-#        # Save the uploaded file with a unique filename
-#        unique_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'uploaded_audio.wav')
-#        audio_file.save(unique_filename)
-#
-#        model = whisper.load_model("base")
-#
-#        # load audio and pad/trim it to fit 30 seconds
-#        audio = whisper.load_audio(unique_filename)
-#        audio = whisper.pad_or_trim(audio)
-#
-#        # make log-Mel spectrogram and move to the same device as the model
-#        mel = whisper.log_mel_spectrogram(audio).to(model.device)
-#
-#        # detect the spoken language
-#        _, probs = model.detect_language(mel)
-#        print(f"filename: {audio_file.filename}")
-#        print(f"Detected language: {max(probs, key=probs.get)}")
-#
-#        # decode the audio
-#        options = whisper.DecodingOptions(fp16=False)
-#        result = whisper.decode(model, mel, options)
-#
-#        # summarize the text
-#        summary = summarizer_clinical_laymen_onnx_pipeline(result.text)
-#
-#        # Convert the summary into a JSON serializable format
-#        summary_json = str(summary)
-#
-#        # Return the summary as JSON
-#        return jsonify({'summary': summary_json})
-#
-#    except Exception as e:
-#        return f'Error: {e}'
-#
+# returns english translation using marianmt
+@app.route('/marianmt-fi-en', methods=['POST'])
+def marianmt_fi_en():
+    try:
+        data = request.json
+
+        if 'text' in data:
+            text = data['text']
+
+            # Tokenize input text
+            inputs = tokenizer_fi_en(text, return_tensors="pt", max_length=512, truncation=True)
+
+            # Generate translation
+            translation_ids = model_fi_en.generate(**inputs)
+
+            # Decode the generated translation
+            translated_text = tokenizer_fi_en.decode(translation_ids[0], skip_special_tokens=True)
+            print(translated_text)
+            return jsonify({'translation': translated_text})
+        else:
+            return 'Error: No text provided in JSON data'
+
+    except Exception as e:
+        return f'Error: {e}'
+
+
+# returns finnish translation using marianmt
+@app.route('/marianmt-en-fi', methods=['POST'])
+def marianmt_en_fi():
+    try:
+        data = request.json
+
+        if 'text' in data:
+            text = data['text']
+
+            # Tokenize input text
+            inputs = tokenizer_en_fi(text, return_tensors="pt", max_length=512, truncation=True)
+
+            # Generate translation
+            translation_ids = model_en_fi.generate(**inputs)
+
+            # Decode the generated translation
+            translated_text = tokenizer_en_fi.decode(translation_ids[0], skip_special_tokens=True)
+            print(translated_text)
+            return jsonify({'translation': translated_text})
+        else:
+            return 'Error: No text provided in JSON data'
+
+    except Exception as e:
+        return f'Error: {e}'
+
 
 @app.before_request
 def parse_json():
     if request.method == 'POST' and request.path == '/summary':
         if request.content_type == 'application/json':
             request.json_data = request.get_json()
+
 # returns summary from text
 @app.route('/summary', methods=['POST'])
 def text_to_summary_api():

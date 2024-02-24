@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-import torch
 from transformers import MarianMTModel, MarianTokenizer
 
 app = Flask(__name__)
@@ -21,9 +20,9 @@ model_en_fi = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-fi")
 def hello_world():
     return "hello world!"
 
-# returns english translation using fairseq
-@app.route('/fairseq-fi-en', methods=['POST'])
-def fairseq_fi_en():
+# returns english translation using marianmt
+@app.route('/marianmt-fi-en', methods=['POST'])
+def marianmt_fi_en():
     try:
         data = request.json
 
@@ -47,9 +46,9 @@ def fairseq_fi_en():
         return f'Error: {e}'
 
 
-# returns finnish translation using fairseq
-@app.route('/fairseq-en-fi', methods=['POST'])
-def fairseq_en_fi():
+# returns finnish translation using marianmt
+@app.route('/marianmt-en-fi', methods=['POST'])
+def marianmt_en_fi():
     try:
         data = request.json
 
