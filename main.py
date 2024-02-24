@@ -104,7 +104,7 @@ def translate_in_google():
         return f'Error: {e}'
 
 
-# returns english translation using marianmt
+# returns english translation using marianmt.
 @app.route('/marianmt-fi-en', methods=['POST'])
 def marianmt_fi_en():
     try:
@@ -130,7 +130,7 @@ def marianmt_fi_en():
         return f'Error: {e}'
 
 
-# returns finnish translation using marianmt
+# returns finnish translation using marianmt.
 @app.route('/marianmt-en-fi', methods=['POST'])
 def marianmt_en_fi():
     try:
