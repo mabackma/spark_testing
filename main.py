@@ -14,6 +14,8 @@ from make_summary import make_summary
 from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request as AuthRequest
 from transformers import MarianMTModel, MarianTokenizer
+from openai import OpenAI
+
 
 app = Flask(__name__)
 CORS(app)
@@ -34,6 +36,10 @@ model_fi_en = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-fi-en")
 # Load the pre-trained MarianMT model and tokenizer for translation english to finnish
 tokenizer_en_fi = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-fi")
 model_en_fi = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-fi")
+
+# chat-gpt
+client = OpenAI(api_key=os.getenv("CHAT_GPT_KEY"))
+
 
 # Returns the Java version that is running
 def get_java_version():
@@ -69,7 +75,39 @@ def summarize(pipeline, input_text):
     return summary
 
 
-# returns finnish translation using google cloud translation
+# returns translation using chat-GPT
+@app.route('/chatgpt-translation', methods=['POST'])
+def chatgpt_translation():
+    try:
+        data = request.json
+
+        if 'text' in data:
+            if 'targetLanguage' in data:
+                prompt = f"Translate the following text into {data['targetLanguage']}: {data['text']}"
+                print(prompt)
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    model="gpt-3.5-turbo"
+                )
+
+                reply = chat_completion.choices[0].message.content
+                print(reply)
+                return jsonify({'translation': reply})
+            else:
+                return 'Error: No language provided in JSON data'
+        else:
+            return 'Error: No text provided in JSON data'
+
+    except Exception as e:
+        return f'Error: {e}'
+
+
+# returns translation using google cloud translation
 @app.route('/translate-in-google', methods=['POST'])
 def translate_in_google():
     try:

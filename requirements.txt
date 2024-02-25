@@ -27,3 +27,5 @@ transformers
 fairseq
 sacremoses
 sentencepiece
+
+openai
