@@ -15,6 +15,7 @@ from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request as AuthRequest
 from transformers import MarianMTModel, MarianTokenizer
 from openai import OpenAI
+import requests, uuid
 
 
 app = Flask(__name__)
@@ -40,6 +41,10 @@ model_en_fi = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-fi")
 # chat-gpt
 client = OpenAI(api_key=os.getenv("CHAT_GPT_KEY"))
 
+# microsoft translator
+key = os.getenv('AZURE_KEY2')
+url = "https://api.cognitive.microsofttranslator.com/translate"
+location = 'northeurope'
 
 # Returns the Java version that is running
 def get_java_version():
@@ -135,6 +140,43 @@ def translate_in_google():
             translated_text = response.translations[0].translated_text
             print(translated_text)
             return jsonify({'translation': translated_text})
+        else:
+            return 'Error: No text provided in JSON data'
+
+    except Exception as e:
+        return f'Error: {e}'
+
+
+# returns english translation using microsoft
+@app.route('/microsoft-translation', methods=['POST'])
+def microsoft_translation():
+    try:
+        data = request.json
+
+        if 'text' in data:
+            if 'targetLanguage' in data:
+                body = [{
+                    'text': data['text']
+                }]
+
+                params = {
+                    'api-version': '3.0',
+                    'to': [data['targetLanguage']]
+                }
+
+                headers = {
+                    'Ocp-Apim-Subscription-Key': key,
+                    'Ocp-Apim-Subscription-Region': location,
+                    'Content-type': 'application/json',
+                    'X-ClientTraceId': str(uuid.uuid4())
+                }
+
+                result = requests.post(url, params=params, headers=headers, json=body)
+                response = result.json()
+                print(response)
+                return jsonify({'translation': response[0]['translations'][0]['text']})
+            else:
+                return 'Error: No language provided in JSON data'
         else:
             return 'Error: No text provided in JSON data'
 

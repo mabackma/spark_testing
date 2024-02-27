@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request as req, jsonify
 from flask_cors import CORS
-from openai import OpenAI
+import requests, uuid
 import os
 
 
@@ -9,32 +9,39 @@ app = Flask(__name__)
 CORS(app)
 load_dotenv()
 
-# chat-gpt
-client = OpenAI(api_key=os.getenv("CHAT_GPT_KEY"))
+# microsoft translator
+key = os.getenv('AZURE_KEY2')
+url = "https://api.cognitive.microsofttranslator.com/translate"
+location = 'northeurope'
 
-# returns english translation using chat-GPT
-@app.route('/chatgpt-translation', methods=['POST'])
-def chatgpt_translation():
+# returns english translation using microsoft
+@app.route('/microsoft-translation', methods=['POST'])
+def microsoft_translation():
     try:
-        data = request.json
+        data = req.json
 
         if 'text' in data:
             if 'targetLanguage' in data:
-                prompt = f"Translate the following text into {data['targetLanguage']}: {data['text']}"
-                print(prompt)
-                chat_completion = client.chat.completions.create(
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    model="gpt-3.5-turbo"
-                )
+                body = [{
+                    'text': data['text']
+                }]
 
-                reply = chat_completion.choices[0].message.content
-                print(reply)
-                return jsonify({'translation': reply})
+                params = {
+                    'api-version': '3.0',
+                    'to': [data['targetLanguage']]
+                }
+
+                headers = {
+                    'Ocp-Apim-Subscription-Key': key,
+                    'Ocp-Apim-Subscription-Region': location,
+                    'Content-type': 'application/json',
+                    'X-ClientTraceId': str(uuid.uuid4())
+                }
+
+                request = requests.post(url, params=params, headers=headers, json=body)
+                response = request.json()
+                print(response)
+                return jsonify({'translation': response[0]['translations'][0]['text']})
             else:
                 return 'Error: No language provided in JSON data'
         else:
